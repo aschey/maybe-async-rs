@@ -306,15 +306,16 @@ fn convert_async(input: &mut Item, send: bool) -> TokenStream2 {
             Item::Impl(item) => quote!(#[async_trait::async_trait]#item),
             Item::Trait(item) => quote!(#[async_trait::async_trait]#item),
             Item::Fn(item) => quote!(#item),
+            Item::Struct(item) => quote!(#item),
         }
     } else {
         match input {
             Item::Impl(item) => quote!(#[async_trait::async_trait(?Send)]#item),
             Item::Trait(item) => quote!(#[async_trait::async_trait(?Send)]#item),
             Item::Fn(item) => quote!(#item),
+            Item::Struct(item) => quote!(#item),
         }
     }
-    .into()
 }
 
 fn convert_sync(input: &mut Item) -> TokenStream2 {
@@ -345,8 +346,10 @@ fn convert_sync(input: &mut Item) -> TokenStream2 {
             }
             AsyncAwaitRemoval.remove_async_await(quote!(#item))
         }
+        Item::Struct(item) => {
+            quote!(#item)
+        }
     }
-    .into()
 }
 
 /// maybe_async attribute macro
@@ -354,7 +357,7 @@ fn convert_sync(input: &mut Item) -> TokenStream2 {
 /// Can be applied to trait item, trait impl, functions and struct impls.
 #[proc_macro_attribute]
 pub fn maybe_async(args: TokenStream, input: TokenStream) -> TokenStream {
-    let send = match args.to_string().replace(" ", "").as_str() {
+    let send = match args.to_string().replace(' ', "").as_str() {
         "" | "Send" => Some(true),
         "?Send" => Some(false),
         _ => None,
@@ -376,7 +379,7 @@ pub fn maybe_async(args: TokenStream, input: TokenStream) -> TokenStream {
 /// convert marked async code to async code with `async-trait`
 #[proc_macro_attribute]
 pub fn must_be_async(args: TokenStream, input: TokenStream) -> TokenStream {
-    let send = match args.to_string().replace(" ", "").as_str() {
+    let send = match args.to_string().replace(' ', "").as_str() {
         "" | "Send" => Some(true),
         "?Send" => Some(false),
         _ => None,
@@ -417,7 +420,7 @@ pub fn sync_impl(_args: TokenStream, input: TokenStream) -> TokenStream {
 /// When `is_sync` is set, marked code is removed.
 #[proc_macro_attribute]
 pub fn async_impl(args: TokenStream, input: TokenStream) -> TokenStream {
-    let send = match args.to_string().replace(" ", "").as_str() {
+    let send = match args.to_string().replace(' ', "").as_str() {
         "" | "Send" => Some(true),
         "?Send" => Some(false),
         _ => None,
@@ -531,7 +534,7 @@ macro_rules! match_nested_meta_to_str_lit {
 pub fn test(args: TokenStream, input: TokenStream) -> TokenStream {
     let attr_args = parse_macro_input!(args as AttributeArgs);
     let input = TokenStream2::from(input);
-    if attr_args.len() < 1 {
+    if attr_args.is_empty() {
         return syn::Error::new(
             Span::call_site(),
             "Arguments cannot be empty, at least specify the condition for sync code",

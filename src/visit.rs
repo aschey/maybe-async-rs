@@ -33,52 +33,50 @@ impl<'a> VisitMut for ReplaceGenericType<'a> {
     fn visit_item_mut(&mut self, i: &mut Item) {
         if let Item::Fn(item_fn) = i {
             // remove generic type from generics <T, F>
-            let args = item_fn
-                .sig
-                .generics
-                .params
-                .iter()
-                .filter_map(|param| {
-                    if let GenericParam::Type(type_param) = &param {
-                        if type_param.ident.to_string().eq(self.generic_type) {
-                            None
+
+            item_fn.sig.generics.params = Punctuated::from_iter(
+                item_fn
+                    .sig
+                    .generics
+                    .params
+                    .iter()
+                    .filter_map(|param| {
+                        if let GenericParam::Type(type_param) = &param {
+                            if type_param.ident.to_string().eq(self.generic_type) {
+                                None
+                            } else {
+                                Some(param)
+                            }
                         } else {
                             Some(param)
                         }
-                    } else {
-                        Some(param)
-                    }
-                })
-                .collect::<Vec<_>>();
-            item_fn.sig.generics.params =
-                Punctuated::from_iter(args.into_iter().map(|p| p.clone()).collect::<Vec<_>>());
+                    })
+                    .cloned()
+                    .collect::<Vec<_>>(),
+            );
 
             // remove generic type from where clause
             if let Some(where_clause) = &mut item_fn.sig.generics.where_clause {
-                let new_where_clause = where_clause
-                    .predicates
-                    .iter()
-                    .filter_map(|predicate| {
-                        if let WherePredicate::Type(predicate_type) = predicate {
-                            if let Type::Path(p) = &predicate_type.bounded_ty {
-                                if p.path.segments[0].ident.to_string().eq(self.generic_type) {
-                                    None
+                where_clause.predicates = Punctuated::from_iter(
+                    where_clause
+                        .predicates
+                        .iter()
+                        .filter_map(|predicate| {
+                            if let WherePredicate::Type(predicate_type) = predicate {
+                                if let Type::Path(p) = &predicate_type.bounded_ty {
+                                    if p.path.segments[0].ident.to_string().eq(self.generic_type) {
+                                        None
+                                    } else {
+                                        Some(predicate)
+                                    }
                                 } else {
                                     Some(predicate)
                                 }
                             } else {
                                 Some(predicate)
                             }
-                        } else {
-                            Some(predicate)
-                        }
-                    })
-                    .collect::<Vec<_>>();
-
-                where_clause.predicates = Punctuated::from_iter(
-                    new_where_clause
-                        .into_iter()
-                        .map(|c| c.clone())
+                        })
+                        .cloned()
                         .collect::<Vec<_>>(),
                 );
             };
