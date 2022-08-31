@@ -307,6 +307,7 @@ fn convert_async(input: &mut Item, send: bool) -> TokenStream2 {
             Item::Trait(item) => quote!(#[async_trait::async_trait]#item),
             Item::Fn(item) => quote!(#item),
             Item::Struct(item) => quote!(#item),
+            Item::Type(item) => quote!(#item),
         }
     } else {
         match input {
@@ -314,6 +315,7 @@ fn convert_async(input: &mut Item, send: bool) -> TokenStream2 {
             Item::Trait(item) => quote!(#[async_trait::async_trait(?Send)]#item),
             Item::Fn(item) => quote!(#item),
             Item::Struct(item) => quote!(#item),
+            Item::Type(item) => quote!(#item),
         }
     }
 }
@@ -347,6 +349,9 @@ fn convert_sync(input: &mut Item) -> TokenStream2 {
             AsyncAwaitRemoval.remove_async_await(quote!(#item))
         }
         Item::Struct(item) => {
+            quote!(#item)
+        }
+        Item::Type(item) => {
             quote!(#item)
         }
     }

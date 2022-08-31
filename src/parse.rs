@@ -1,7 +1,7 @@
 use proc_macro2::Span;
 use syn::{
     parse::{discouraged::Speculative, Parse, ParseStream, Result},
-    Attribute, Error, ItemFn, ItemImpl, ItemStruct, ItemTrait,
+    Attribute, Error, ItemFn, ItemImpl, ItemStruct, ItemTrait, ItemType,
 };
 
 pub enum Item {
@@ -9,6 +9,7 @@ pub enum Item {
     Impl(ItemImpl),
     Fn(ItemFn),
     Struct(ItemStruct),
+    Type(ItemType),
 }
 
 macro_rules! fork {
@@ -37,10 +38,13 @@ impl Parse for Item {
         } else if let Ok(mut item) = fork!(fork = input).parse::<ItemStruct>() {
             item.attrs = attrs;
             Item::Struct(item)
+        } else if let Ok(mut item) = fork!(fork = input).parse::<ItemType>() {
+            item.attrs = attrs;
+            Item::Type(item)
         } else {
             return Err(Error::new(
                 Span::call_site(),
-                "expected trait impl, trait or fn",
+                "expected trait impl, trait, fn, struct, or type",
             ));
         };
         input.advance_to(&fork);
